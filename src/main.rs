@@ -5,6 +5,8 @@ use std::{
     ops::{Index, IndexMut},
 };
 
+// const VALID_PIECE_NAMES: [&str; 12] = ["p", "n", "b", "r", "q", "k", "P", "N", "B", "R", "Q", "K"];
+
 #[derive(Clone, Copy)]
 enum PieceType {
     Pawn,
@@ -58,6 +60,11 @@ impl Display for Square {
             write!(f, "-")
         }
     }
+}
+
+struct Move {
+    pub start: (usize, usize),
+    pub end: (usize, usize),
 }
 
 struct Board([[Square; 8]; 8]);
@@ -114,27 +121,103 @@ impl Board {
         board
     }
 
+    pub fn starting_pos() -> Self {
+        Self::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    }
+
+    pub fn is_move_valid(&self, chess_move: &Move) -> bool {
+        let Move { start, end } = chess_move;
+
+        let start_piece = self[*start].0;
+        let end_piece = self[*end].0;
+
+        if let Some(start_piece) = start_piece {
+            match start_piece.piece_type {
+                PieceType::Rook => {
+                    println!("Start: {:?} - End: {:?}", start, end);
+                    if start.1 == end.1 {
+                        let ranks = if start.0 < end.0 {
+                            start.0 + 1..=end.0
+                        } else {
+                            end.0..=start.0 - 1
+                        };
+                        for rank in ranks {
+                            let current_piece = self[(rank, start.1)].0;
+                            if let Some(current_piece) = current_piece {
+                                if current_piece.color == start_piece.color {
+                                    return false;
+                                } else {
+                                    return rank == end.0;
+                                }
+                            } else {
+                                continue;
+                            }
+                        }
+                    } else if start.0 == end.0 {
+                        let files = if start.1 < end.1 {
+                            start.1 + 1..=end.1
+                        } else {
+                            end.1..=start.1 - 1
+                        };
+                        for file in files {
+                            let current_piece = self[(start.0, file)].0;
+                            if let Some(current_piece) = current_piece {
+                                if current_piece.color == start_piece.color {
+                                    return false;
+                                } else {
+                                    return file == end.1;
+                                }
+                            } else {
+                                continue;
+                            }
+                        }
+                    } else {
+                        return false;
+                    }
+
+                    true
+                }
+
+                _ => unimplemented!(),
+            }
+        } else {
+            false
+        }
+    }
+
+    pub fn make_move(&mut self, chess_move: &Move) {
+        if !self.is_move_valid(chess_move) {
+            println!("Invalid move: Does not follow chess rules!");
+            return;
+        }
+
+        self[chess_move.end].0 = self[chess_move.start].0;
+        self[chess_move.start].0 = None;
+    }
+
     pub fn print(&self) {
-        print!("    ");
+        println!("-----------------------------------------");
+        print!("      ");
         for file in 'a'..='h' {
             print!("{}   ", file);
         }
         println!();
 
         for rank in 0..8 {
-            print!("{} | ", rank + 1);
+            print!("  {} | ", 8 - rank);
             for file in 0..8 {
                 print!("{} | ", self[(rank, file)]);
             }
-            print!("{}", rank + 1);
+            print!("{}", 8 - rank);
             println!();
         }
 
-        print!("    ");
+        print!("      ");
         for file in 'a'..='h' {
             print!("{}   ", file);
         }
         println!();
+        println!("-----------------------------------------");
     }
 }
 
@@ -159,8 +242,32 @@ struct Game {
 
 impl Game {
     pub fn new() -> Self {
-        let board =
-            Board::from_fen("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2");
+        let mut board = Board::new();
+
+        board[(4, 4)] = Square(Some(Piece {
+            piece_type: PieceType::Rook,
+            color: Color::White,
+        }));
+
+        board[(4, 1)] = Square(Some(Piece {
+            piece_type: PieceType::Pawn,
+            color: Color::White,
+        }));
+
+        board[(4, 6)] = Square(Some(Piece {
+            piece_type: PieceType::Pawn,
+            color: Color::Black,
+        }));
+
+        board[(2, 4)] = Square(Some(Piece {
+            piece_type: PieceType::Pawn,
+            color: Color::White,
+        }));
+
+        board[(6, 4)] = Square(Some(Piece {
+            piece_type: PieceType::Pawn,
+            color: Color::Black,
+        }));
 
         Self {
             board,
@@ -169,7 +276,61 @@ impl Game {
     }
 }
 
+fn pos_to_index(pos: &str) -> Option<(usize, usize)> {
+    if pos.len() == 2 {
+        let mut pos = pos.chars();
+        let file = pos.next().unwrap();
+        let rank = pos.next().unwrap().to_digit(10).unwrap() as usize;
+
+        if ('a'..='h').contains(&file) && (1..=8).contains(&rank) {
+            Some((8 - rank, file as usize - 'a' as usize))
+        } else {
+            None
+        }
+    } else {
+        panic!("Invalid position")
+    }
+}
+
 fn main() {
-    let game = Game::new();
-    game.board.print();
+    let mut game = Game::new();
+
+    loop {
+        game.board.print();
+
+        println!("Make your move:");
+
+        let mut chess_move = String::new();
+
+        std::io::stdin()
+            .read_line(&mut chess_move)
+            .expect("Failed to read line");
+
+        let chess_move = chess_move.trim();
+        if chess_move.len() == 5 {
+            let piece_name = &chess_move[..1];
+            let start_square = &chess_move[1..3];
+            let end_square = &chess_move[3..];
+
+            let start = pos_to_index(start_square);
+            let end = pos_to_index(end_square);
+
+            if let (Some(start), Some(end)) = (start, end) {
+                let start_piece = game.board[start].to_string();
+                if piece_name != start_piece {
+                    println!("Invalid move: Incorrect piece!");
+                    continue;
+                }
+
+                let chess_move = Move { start, end };
+                game.board.make_move(&chess_move);
+            } else {
+                println!("Invalid move: Out of bounds index");
+                continue;
+            }
+        } else {
+            println!("Invalid move: Wrong syntax!");
+            continue;
+        }
+    }
 }
