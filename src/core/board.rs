@@ -1,6 +1,8 @@
 use std::ops::{Index, IndexMut};
 
-use crate::{Color, Move, Piece, PieceType, Square};
+use crate::{Move, Piece, PieceType, Square};
+
+pub const STARTING_FEN_STRING: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 pub struct Board([[Square; 8]; 8]);
 
@@ -20,30 +22,9 @@ impl Board {
             let mut file = 0;
             for c in row.chars() {
                 if c.is_ascii_alphabetic() {
-                    let piece_color = if c.is_uppercase() {
-                        Color::White
-                    } else {
-                        Color::Black
-                    };
-
-                    let piece_name = c.to_ascii_lowercase();
-
-                    let piece_type = match piece_name {
-                        'p' => PieceType::Pawn,
-                        'n' => PieceType::Knight,
-                        'b' => PieceType::Bishop,
-                        'r' => PieceType::Rook,
-                        'q' => PieceType::Queen,
-                        'k' => PieceType::King,
-                        _ => panic!("Unexpected piece type"),
-                    };
-
-                    let piece = Piece {
-                        piece_type,
-                        color: piece_color,
-                    };
-                    board[(rank, file)] = Square(Some(piece));
-                } else if c.is_numeric() {
+                    let piece = Piece::from_char(c);
+                    board[(rank, file)] = Square(piece);
+                } else if ('1'..='8').contains(&c) {
                     file += c.to_digit(10).unwrap() as usize - 1;
                 } else {
                     panic!("Unexpected character in FEN string")
@@ -51,13 +32,17 @@ impl Board {
 
                 file += 1;
             }
+
+            if rank >= 8 {
+                panic!("Invalid number of rows")
+            }
         }
 
         board
     }
 
     pub fn starting_pos() -> Self {
-        Self::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+        Self::from_fen(STARTING_FEN_STRING)
     }
 
     pub fn is_move_valid(&self, chess_move: &Move) -> bool {

@@ -10,20 +10,6 @@ pub enum PieceType {
     King,
 }
 
-impl Display for PieceType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let piece_name = match self {
-            PieceType::Pawn => "p",
-            PieceType::Knight => "n",
-            PieceType::Bishop => "b",
-            PieceType::Rook => "r",
-            PieceType::Queen => "q",
-            PieceType::King => "k",
-        };
-        write!(f, "{}", piece_name)
-    }
-}
-
 #[derive(Clone, Copy, PartialEq)]
 pub enum Color {
     White,
@@ -36,15 +22,59 @@ pub struct Piece {
     pub color: Color,
 }
 
+impl Piece {
+    pub fn simple_char(&self) -> &'static str {
+        match (self.piece_type, self.color) {
+            (PieceType::Pawn, Color::White) => "P",
+            (PieceType::Pawn, Color::Black) => "p",
+            (PieceType::Knight, Color::White) => "N",
+            (PieceType::Knight, Color::Black) => "n",
+            (PieceType::Bishop, Color::White) => "B",
+            (PieceType::Bishop, Color::Black) => "b",
+            (PieceType::Rook, Color::White) => "R",
+            (PieceType::Rook, Color::Black) => "r",
+            (PieceType::Queen, Color::White) => "Q",
+            (PieceType::Queen, Color::Black) => "q",
+            (PieceType::King, Color::White) => "K",
+            (PieceType::King, Color::Black) => "k",
+        }
+    }
+
+    pub fn from_char(c: char) -> Option<Self> {
+        let (piece_type, color) = match c {
+            'P' => (PieceType::Pawn, Color::White),
+            'p' => (PieceType::Pawn, Color::Black),
+            'N' => (PieceType::Knight, Color::White),
+            'n' => (PieceType::Knight, Color::Black),
+            'B' => (PieceType::Bishop, Color::White),
+            'b' => (PieceType::Bishop, Color::Black),
+            'R' => (PieceType::Rook, Color::White),
+            'r' => (PieceType::Rook, Color::Black),
+            'Q' => (PieceType::Queen, Color::White),
+            'q' => (PieceType::Queen, Color::Black),
+            'K' => (PieceType::King, Color::White),
+            'k' => (PieceType::King, Color::Black),
+            _ => return None,
+        };
+
+        Some(Self { piece_type, color })
+    }
+
+    // pub fn fancy_char(&self) -> &'static str {
+    //     match self.piece_type {
+    //         PieceType::Pawn => "♟︎",
+    //         PieceType::Knight => "♞",
+    //         PieceType::Bishop => "♝",
+    //         PieceType::Rook => "♜",
+    //         PieceType::Queen => "♛",
+    //         PieceType::King => "♚",
+    //     }
+    // }
+}
+
 impl Display for Piece {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut piece_name = format!("{}", self.piece_type);
-
-        if self.color == Color::White {
-            piece_name = piece_name.to_uppercase();
-        }
-
-        write!(f, "{}", piece_name)
+        write!(f, "{}", self.simple_char())
     }
 }
 
