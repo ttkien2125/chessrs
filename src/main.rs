@@ -16,7 +16,6 @@ struct Game {
 impl Game {
     pub fn new() -> Self {
         let mut board = Board::new();
-        // let mut board = Board::starting_pos();
 
         board[(4, 4)] = Square(Some(Piece {
             piece_type: PieceType::Rook,
