@@ -1,62 +1,49 @@
 #![allow(dead_code)]
 
-mod core;
-use core::{board::*, piece::*};
+mod bitset;
+mod board;
+mod piece;
+
+use board::Board;
+use piece::Piece;
 
 struct Move {
-    pub start: (usize, usize),
-    pub end: (usize, usize),
+    pub from: (u8, u8),
+    pub to: (u8, u8),
+    pub piece: Piece,
+    pub capture: Option<Piece>,
 }
 
 struct Game {
     pub board: Board,
-    pub turn: Color,
+    // pub turn: Color,
 }
 
 impl Game {
     pub fn new() -> Self {
         let mut board = Board::new();
 
-        board[(4, 4)] = Square(Some(Piece {
-            piece_type: PieceType::Rook,
-            color: Color::White,
-        }));
-
-        board[(4, 1)] = Square(Some(Piece {
-            piece_type: PieceType::Pawn,
-            color: Color::White,
-        }));
-
-        board[(4, 6)] = Square(Some(Piece {
-            piece_type: PieceType::Pawn,
-            color: Color::Black,
-        }));
-
-        board[(2, 4)] = Square(Some(Piece {
-            piece_type: PieceType::Pawn,
-            color: Color::White,
-        }));
-
-        board[(6, 4)] = Square(Some(Piece {
-            piece_type: PieceType::Pawn,
-            color: Color::Black,
-        }));
+        board.set(4, 4, Piece::WhiteRook);
+        board.set(4, 1, Piece::WhitePawn);
+        board.set(4, 6, Piece::BlackPawn);
+        board.set(2, 4, Piece::WhiteKnight);
+        board.set(6, 4, Piece::BlackKnight);
 
         Self {
             board,
-            turn: Color::White,
+            // turn: Color::White,
         }
     }
 }
 
-fn pos_to_index(pos: &str) -> Option<(usize, usize)> {
+fn pos_to_index(pos: &str) -> Option<(u8, u8)> {
     if pos.len() == 2 {
         let mut pos = pos.chars();
         let file = pos.next().unwrap();
-        let rank = pos.next().unwrap().to_digit(10).unwrap() as usize;
+        let rank = pos.next().unwrap().to_digit(10).unwrap() as u8;
 
         if ('a'..='h').contains(&file) && (1..=8).contains(&rank) {
-            Some((8 - rank, file as usize - 'a' as usize))
+            Some((8 - rank, file as u8 - b'a'))
         } else {
             None
         }
@@ -69,7 +56,12 @@ fn main() {
     let mut game = Game::new();
 
     loop {
-        game.board.print();
+        println!("{}", game.board);
+
+        println!("Bitsets:");
+        for (index, bitset) in game.board.pieces.iter().enumerate() {
+            println!("{} - {}", Piece::from_index(index).unwrap(), bitset);
+        }
 
         println!("Make your move:");
 
@@ -84,12 +76,24 @@ fn main() {
             let start_square = &chess_move[0..2];
             let end_square = &chess_move[2..];
 
-            let start = pos_to_index(start_square);
-            let end = pos_to_index(end_square);
+            let from = pos_to_index(start_square);
+            let to = pos_to_index(end_square);
 
-            if let (Some(start), Some(end)) = (start, end) {
-                let chess_move = Move { start, end };
-                game.board.make_move(&chess_move);
+            if let (Some(from), Some(to)) = (from, to) {
+                if let Some(piece) = game.board.get(from.0, from.1) {
+                    let capture = game.board.get(to.0, to.1);
+
+                    let chess_move = Move {
+                        from,
+                        to,
+                        piece,
+                        capture,
+                    };
+                    game.board.make_move(&chess_move);
+                } else {
+                    println!("No piece at move start!");
+                    continue;
+                }
             } else {
                 println!("Out of bounds position!");
                 continue;
