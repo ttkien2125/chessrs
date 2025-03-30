@@ -4,7 +4,7 @@ mod bitset;
 mod board;
 mod piece;
 
-use board::Board;
+use board::{Board, STARTING_FEN_STRING};
 use piece::Piece;
 
 struct Move {
@@ -21,13 +21,14 @@ struct Game {
 
 impl Game {
     pub fn new() -> Self {
-        let mut board = Board::new();
-
-        board.set(4, 4, Piece::WhiteRook);
-        board.set(4, 1, Piece::WhitePawn);
-        board.set(4, 6, Piece::BlackPawn);
-        board.set(2, 4, Piece::WhiteKnight);
-        board.set(6, 4, Piece::BlackKnight);
+        let board = Board::from_fen(STARTING_FEN_STRING).unwrap();
+        // let mut board = Board::new();
+        //
+        // board.set(4, 4, Piece::WhiteRook);
+        // board.set(4, 1, Piece::WhitePawn);
+        // board.set(4, 6, Piece::BlackPawn);
+        // board.set(2, 4, Piece::WhiteKnight);
+        // board.set(6, 4, Piece::BlackKnight);
 
         Self {
             board,
@@ -72,6 +73,10 @@ fn main() {
             .expect("Failed to read line");
 
         let chess_move = chess_move.trim();
+        if chess_move == "q" {
+            return;
+        }
+
         if chess_move.len() == 4 {
             let start_square = &chess_move[0..2];
             let end_square = &chess_move[2..];

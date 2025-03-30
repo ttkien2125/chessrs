@@ -133,6 +133,7 @@ impl Display for Board {
             write!(f, "{}   ", file)?;
         }
         writeln!(f)?;
+        writeln!(f, "    ---------------------------------    ")?;
 
         for rank in 0..8 {
             write!(f, "  {} | ", 8 - rank)?;
@@ -146,6 +147,7 @@ impl Display for Board {
             writeln!(f)?;
         }
 
+        writeln!(f, "    ---------------------------------    ")?;
         write!(f, "      ")?;
         for file in 'a'..='h' {
             write!(f, "{}   ", file)?;
