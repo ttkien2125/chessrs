@@ -16,7 +16,6 @@ struct Move {
 
 struct Game {
     pub board: Board,
-    // pub turn: Color,
 }
 
 impl Game {
@@ -30,10 +29,7 @@ impl Game {
         // board.set(2, 4, Piece::WhiteKnight);
         // board.set(6, 4, Piece::BlackKnight);
 
-        Self {
-            board,
-            // turn: Color::White,
-        }
+        Self { board }
     }
 }
 

@@ -1,11 +1,16 @@
 use std::fmt::Display;
 
-use crate::{bitset::Bitset, piece::Piece, Move};
+use crate::{
+    bitset::Bitset,
+    piece::{Color, Piece},
+    Move,
+};
 
 pub const STARTING_FEN_STRING: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 pub struct Board {
     pub pieces: [Bitset; 12],
     // pub occupancy: [Bitset; 3],
+    pub side_to_move: Color,
 }
 
 impl Board {
@@ -13,7 +18,10 @@ impl Board {
         let pieces = [const { Bitset::new(0) }; 12];
         // let occupancy = [const { Bitset(0) }; 3];
 
-        Self { pieces }
+        Self {
+            pieces,
+            side_to_move: Color::White,
+        }
     }
 
     pub fn get(&self, rank: u8, file: u8) -> Option<Piece> {
@@ -77,11 +85,17 @@ impl Board {
             from, to, piece, ..
         } = chess_move;
 
+        if self.side_to_move != piece.color() {
+            println!("Out of turn move!");
+            return false;
+        }
+
         let from_square = from.0 * 8 + from.1;
         let _to_square = to.0 * 8 + to.1;
 
         let bitset = &self.pieces[piece.index()];
         if !bitset.is_bit_set(from_square) {
+            println!("Invalid piece at starting square!");
             return false;
         }
 
@@ -107,7 +121,6 @@ impl Board {
         } = chess_move;
 
         if !self.is_move_valid(chess_move) {
-            println!("Invalid move!");
             return;
         }
 
@@ -122,6 +135,8 @@ impl Board {
             let bitset = &mut self.pieces[capture.index()];
             bitset.clear_bit(to_square);
         }
+
+        self.side_to_move = self.side_to_move.opposite();
     }
 }
 

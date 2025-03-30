@@ -17,9 +17,19 @@ pub enum Piece {
     BlackKing,
 }
 
+#[derive(PartialEq)]
 pub enum Color {
     White,
     Black,
+}
+
+impl Color {
+    pub fn opposite(&self) -> Self {
+        match self {
+            Self::White => Self::Black,
+            Self::Black => Self::White,
+        }
+    }
 }
 
 impl Piece {
@@ -58,6 +68,24 @@ impl Piece {
             11 => Some(Self::BlackKing),
 
             _ => None,
+        }
+    }
+
+    pub fn color(&self) -> Color {
+        match self {
+            Self::WhitePawn => Color::White,
+            Self::WhiteKnight => Color::White,
+            Self::WhiteBishop => Color::White,
+            Self::WhiteRook => Color::White,
+            Self::WhiteQueen => Color::White,
+            Self::WhiteKing => Color::White,
+
+            Self::BlackPawn => Color::Black,
+            Self::BlackKnight => Color::Black,
+            Self::BlackBishop => Color::Black,
+            Self::BlackRook => Color::Black,
+            Self::BlackQueen => Color::Black,
+            Self::BlackKing => Color::Black,
         }
     }
 
