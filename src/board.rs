@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use crate::{
     bitset::Bitset,
+    movegen::valid_moves,
     piece::{Color, Piece},
     Move,
 };
@@ -106,38 +107,6 @@ impl Board {
         Some(board)
     }
 
-    pub fn is_move_valid(&self, chess_move: &Move) -> bool {
-        let Move {
-            from, to, piece, ..
-        } = chess_move;
-
-        if self.side_to_move != piece.color() {
-            println!("Out of turn move!");
-            return false;
-        }
-
-        let from_square = from.0 * 8 + from.1;
-        let _to_square = to.0 * 8 + to.1;
-
-        let bitset = &self.pieces[piece.index()];
-        if !bitset.is_bit_set(from_square) {
-            println!("Invalid piece at starting square!");
-            return false;
-        }
-
-        // let legal_moves = match piece {
-        //     _ => unimplemented!("{}", piece),
-        // };
-        //
-        // if !legal_moves.is_bit_set(to_square) {
-        //     return false;
-        // }
-
-        // TODO: See if king is in check.
-
-        true
-    }
-
     pub fn make_move(&mut self, chess_move: &Move) {
         let Move {
             from,
@@ -146,7 +115,8 @@ impl Board {
             capture,
         } = chess_move;
 
-        if !self.is_move_valid(chess_move) {
+        let valid_moves = valid_moves(self, from);
+        if !valid_moves.is_bit_set(to.0 * 8 + to.1) {
             return;
         }
 

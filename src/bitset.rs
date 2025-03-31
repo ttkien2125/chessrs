@@ -1,4 +1,7 @@
-use std::fmt::Display;
+use std::{
+    fmt::Display,
+    ops::{BitAnd, BitOr},
+};
 
 pub struct Bitset(u64);
 
@@ -21,6 +24,22 @@ impl Bitset {
 
     pub fn is_bit_set(&self, index: u8) -> bool {
         self.get_bit(index) != 0
+    }
+}
+
+impl BitAnd for Bitset {
+    type Output = Bitset;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Bitset::new(self.0 & rhs.0)
+    }
+}
+
+impl BitOr for Bitset {
+    type Output = Bitset;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Bitset::new(self.0 | rhs.0)
     }
 }
 
