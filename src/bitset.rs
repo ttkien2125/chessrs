@@ -3,6 +3,7 @@ use std::{
     ops::{BitAnd, BitOr},
 };
 
+#[derive(Debug, PartialEq)]
 pub struct Bitset(u64);
 
 impl Bitset {

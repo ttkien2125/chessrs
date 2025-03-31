@@ -70,3 +70,56 @@ pub fn valid_moves(board: &Board, from: &(u8, u8)) -> Bitset {
 
     Bitset::new(0)
 }
+
+// TODO: Write rest of tests.
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bishop_empty_board() {
+        let mut board = Board::new();
+        board.set(4, 4, Piece::WhiteBishop);
+
+        assert_eq!(
+            valid_moves(&board, &(4, 4)),
+            Bitset::new(0x8244280028448201)
+        );
+    }
+
+    #[test]
+    fn bishop_same_color_block() {
+        let mut board = Board::new();
+        board.set(4, 4, Piece::WhiteBishop);
+
+        board.set(3, 3, Piece::WhitePawn);
+        board.set(6, 6, Piece::WhitePawn);
+
+        assert_eq!(
+            valid_moves(&board, &(4, 4)),
+            Bitset::new(0x0204280020408000)
+        );
+    }
+
+    #[test]
+    fn rook_empty_board() {
+        let mut board = Board::new();
+        board.set(4, 4, Piece::WhiteRook);
+
+        assert_eq!(
+            valid_moves(&board, &(4, 4)),
+            Bitset::new(0x101010ef10101010)
+        );
+    }
+
+    #[test]
+    fn queen_empty_board() {
+        let mut board = Board::new();
+        board.set(4, 4, Piece::WhiteQueen);
+
+        assert_eq!(
+            valid_moves(&board, &(4, 4)),
+            Bitset::new(0x925438ef38549211)
+        );
+    }
+}
