@@ -70,6 +70,13 @@ fn main() {
     loop {
         println!("{}", game.board);
 
+        // let mut board = Board::new();
+        // let from = (4, 4);
+        // board.set(from.0, from.1, Piece::WhiteKnight);
+        // let valid = valid_moves(&board, &from);
+        // board.pieces[Piece::BlackPawn.index()] = valid;
+        // println!("{}", board);
+
         println!("Bitsets:");
         for (index, bitset) in game.board.pieces.iter().enumerate() {
             println!("    {}     - {}", Piece::from_index(index).unwrap(), bitset);

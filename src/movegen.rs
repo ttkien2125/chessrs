@@ -1,28 +1,46 @@
 use crate::{bitset::Bitset, board::Board, piece::Piece};
 
-fn sliding_moves(board: &Board, from: &(u8, u8), directions: &[(i8, i8)]) -> Bitset {
+fn valid_target(board: &Board, moves: &mut Bitset, target_square: u8) -> bool {
+    let same_occupied = &board.occupied[board.side_to_move.index()];
+    if same_occupied.is_bit_set(target_square) {
+        return false;
+    }
+
+    moves.set_bit(target_square);
+
+    let opposide_occupied = &board.occupied[board.side_to_move.opposite().index()];
+    if opposide_occupied.is_bit_set(target_square) {
+        return false;
+    }
+
+    true
+}
+
+const KNIGHT_OFFSETS: [(i8, i8); 8] = [
+    (1, 2),
+    (1, -2),
+    (2, 1),
+    (2, -1),
+    (-1, 2),
+    (-1, -2),
+    (-2, -1),
+    (-2, 1),
+];
+
+fn knight_moves(board: &Board, from: &(u8, u8)) -> Bitset {
     let mut moves = Bitset::new(0);
 
     let (rank, file) = *from;
 
-    for &(dr, df) in directions {
+    for (dr, df) in KNIGHT_OFFSETS {
         let (mut r, mut f) = (rank as i8, file as i8);
 
-        while (0..8).contains(&(f + df)) && (0..8).contains(&(r + dr)) {
+        if (0..8).contains(&(r + dr)) && (0..8).contains(&(f + df)) {
             r += dr;
             f += df;
 
             let target_square = (r * 8 + f) as u8;
-
-            let same_occupied = &board.occupied[board.side_to_move.index()];
-            if same_occupied.is_bit_set(target_square) {
-                break;
-            }
-
-            moves.set_bit(target_square);
-
-            let opposide_occupied = &board.occupied[board.side_to_move.opposite().index()];
-            if opposide_occupied.is_bit_set(target_square) {
+            if !valid_target(board, &mut moves, target_square) {
                 break;
             }
         }
@@ -31,16 +49,71 @@ fn sliding_moves(board: &Board, from: &(u8, u8), directions: &[(i8, i8)]) -> Bit
     moves
 }
 
-fn rook_moves(board: &Board, from: &(u8, u8)) -> Bitset {
-    sliding_moves(board, from, &[(1, 0), (-1, 0), (0, 1), (0, -1)])
+fn sliding_moves(board: &Board, from: &(u8, u8), directions: &[(i8, i8)]) -> Bitset {
+    let mut moves = Bitset::new(0);
+
+    let (rank, file) = *from;
+
+    for &(dr, df) in directions {
+        let (mut r, mut f) = (rank as i8, file as i8);
+
+        while (0..8).contains(&(r + dr)) && (0..8).contains(&(f + df)) {
+            r += dr;
+            f += df;
+
+            let target_square = (r * 8 + f) as u8;
+            if !valid_target(board, &mut moves, target_square) {
+                break;
+            }
+        }
+    }
+
+    moves
 }
 
 fn bishop_moves(board: &Board, from: &(u8, u8)) -> Bitset {
     sliding_moves(board, from, &[(1, 1), (1, -1), (-1, 1), (-1, -1)])
 }
 
+fn rook_moves(board: &Board, from: &(u8, u8)) -> Bitset {
+    sliding_moves(board, from, &[(1, 0), (-1, 0), (0, 1), (0, -1)])
+}
+
 fn queen_moves(board: &Board, from: &(u8, u8)) -> Bitset {
     rook_moves(board, from) | bishop_moves(board, from)
+}
+
+const KING_OFFSETS: [(i8, i8); 8] = [
+    (-1, -1),
+    (-1, 0),
+    (-1, 1),
+    (0, -1),
+    (0, 1),
+    (1, -1),
+    (1, 0),
+    (1, 1),
+];
+
+fn king_moves(board: &Board, from: &(u8, u8)) -> Bitset {
+    let mut moves = Bitset::new(0);
+
+    let (rank, file) = *from;
+
+    for (dr, df) in KING_OFFSETS {
+        let (mut r, mut f) = (rank as i8, file as i8);
+
+        if (0..8).contains(&(r + dr)) && (0..8).contains(&(f + df)) {
+            r += dr;
+            f += df;
+
+            let target_square = (r * 8 + f) as u8;
+            if !valid_target(board, &mut moves, target_square) {
+                break;
+            }
+        }
+    }
+
+    moves
 }
 
 pub fn valid_moves(board: &Board, from: &(u8, u8)) -> Bitset {
@@ -51,20 +124,13 @@ pub fn valid_moves(board: &Board, from: &(u8, u8)) -> Bitset {
             return Bitset::new(0);
         }
 
-        // let bitset = &board.pieces[piece.index()];
-        // let from_square = from.0 * 8 + from.1;
-        // if !bitset.is_bit_set(from_square) {
-        //     println!("Invalid piece at starting square!");
-        //     return Bitset::new(0);
-        // }
-
         return match piece {
             Piece::WhitePawn | Piece::BlackPawn => todo!(),
-            Piece::WhiteKnight | Piece::BlackKnight => todo!(),
+            Piece::WhiteKnight | Piece::BlackKnight => knight_moves(board, from),
             Piece::WhiteBishop | Piece::BlackBishop => bishop_moves(board, from),
             Piece::WhiteRook | Piece::BlackRook => rook_moves(board, from),
             Piece::WhiteQueen | Piece::BlackQueen => queen_moves(board, from),
-            Piece::WhiteKing | Piece::BlackKing => todo!(),
+            Piece::WhiteKing | Piece::BlackKing => king_moves(board, from),
         };
     }
 
