@@ -2,10 +2,11 @@
 
 mod bitset;
 mod board;
+mod movegen;
 mod piece;
 
 use board::{Board, STARTING_FEN_STRING};
-use piece::Piece;
+use piece::{Color, Piece};
 
 struct Move {
     pub from: (u8, u8),
@@ -58,6 +59,17 @@ fn main() {
         println!("Bitsets:");
         for (index, bitset) in game.board.pieces.iter().enumerate() {
             println!("{} - {}", Piece::from_index(index).unwrap(), bitset);
+        }
+
+        println!("Occupied:");
+        for (index, bitset) in game.board.occupied.iter().enumerate() {
+            let color = if index > 0 {
+                format!("{}", Color::from_index(index).unwrap())
+            } else {
+                "Both ".to_string()
+            };
+
+            println!("{} - {}", color, bitset);
         }
 
         println!("Make your move:");

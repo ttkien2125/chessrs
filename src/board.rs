@@ -9,17 +9,18 @@ use crate::{
 pub const STARTING_FEN_STRING: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 pub struct Board {
     pub pieces: [Bitset; 12],
-    // pub occupancy: [Bitset; 3],
+    pub occupied: [Bitset; 3],
     pub side_to_move: Color,
 }
 
 impl Board {
     pub fn new() -> Self {
         let pieces = [const { Bitset::new(0) }; 12];
-        // let occupancy = [const { Bitset(0) }; 3];
+        let occupied = [const { Bitset::new(0) }; 3];
 
         Self {
             pieces,
+            occupied,
             side_to_move: Color::White,
         }
     }
@@ -37,10 +38,35 @@ impl Board {
     }
 
     pub fn set(&mut self, rank: u8, file: u8, piece: Piece) {
-        let bitset = &mut self.pieces[piece.index()];
         let square = rank * 8 + file;
 
+        let bitset = &mut self.pieces[piece.index()];
         bitset.set_bit(square);
+
+        self.occupied[0].set_bit(square);
+
+        let occupied = match piece.color() {
+            Color::White => &mut self.occupied[1],
+            Color::Black => &mut self.occupied[2],
+        };
+
+        occupied.set_bit(square);
+    }
+
+    pub fn clear(&mut self, rank: u8, file: u8, piece: Piece) {
+        let square = rank * 8 + file;
+
+        let bitset = &mut self.pieces[piece.index()];
+        bitset.clear_bit(square);
+
+        self.occupied[0].clear_bit(square);
+
+        let occupied = match piece.color() {
+            Color::White => &mut self.occupied[1],
+            Color::Black => &mut self.occupied[2],
+        };
+
+        occupied.clear_bit(square);
     }
 
     // TODO: Support the rest of the FEN string.
@@ -124,16 +150,11 @@ impl Board {
             return;
         }
 
-        let from_square = from.0 * 8 + from.1;
-        let to_square = to.0 * 8 + to.1;
-
-        let bitset = &mut self.pieces[piece.index()];
-        bitset.clear_bit(from_square);
-        bitset.set_bit(to_square);
+        self.clear(from.0, from.1, *piece);
+        self.set(to.0, to.1, *piece);
 
         if let Some(capture) = capture {
-            let bitset = &mut self.pieces[capture.index()];
-            bitset.clear_bit(to_square);
+            self.clear(to.0, to.1, *capture);
         }
 
         self.side_to_move = self.side_to_move.opposite();
@@ -148,8 +169,8 @@ impl Display for Board {
             write!(f, "{}   ", file)?;
         }
         writeln!(f)?;
-        writeln!(f, "    ---------------------------------    ")?;
 
+        writeln!(f, "    ---------------------------------    ")?;
         for rank in 0..8 {
             write!(f, "  {} | ", 8 - rank)?;
             for file in 0..8 {
@@ -161,8 +182,8 @@ impl Display for Board {
             write!(f, "{}", 8 - rank)?;
             writeln!(f)?;
         }
-
         writeln!(f, "    ---------------------------------    ")?;
+
         write!(f, "      ")?;
         for file in 'a'..='h' {
             write!(f, "{}   ", file)?;

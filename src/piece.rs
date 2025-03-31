@@ -1,5 +1,45 @@
 use std::fmt::Display;
 
+#[derive(PartialEq)]
+pub enum Color {
+    White,
+    Black,
+}
+
+impl Color {
+    pub fn index(&self) -> usize {
+        match self {
+            Self::White => 1,
+            Self::Black => 2,
+        }
+    }
+
+    pub fn from_index(index: usize) -> Option<Self> {
+        match index {
+            1 => Some(Self::White),
+            2 => Some(Self::Black),
+
+            _ => None,
+        }
+    }
+
+    pub fn opposite(&self) -> Self {
+        match self {
+            Self::White => Self::Black,
+            Self::Black => Self::White,
+        }
+    }
+}
+
+impl Display for Color {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Color::White => write!(f, "White"),
+            Color::Black => write!(f, "Black"),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Piece {
     WhitePawn,
@@ -15,21 +55,6 @@ pub enum Piece {
     BlackRook,
     BlackQueen,
     BlackKing,
-}
-
-#[derive(PartialEq)]
-pub enum Color {
-    White,
-    Black,
-}
-
-impl Color {
-    pub fn opposite(&self) -> Self {
-        match self {
-            Self::White => Self::Black,
-            Self::Black => Self::White,
-        }
-    }
 }
 
 impl Piece {

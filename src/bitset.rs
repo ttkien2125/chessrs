@@ -4,19 +4,23 @@ pub struct Bitset(u64);
 
 impl Bitset {
     pub const fn new(value: u64) -> Self {
-        Bitset(value)
+        Self(value)
     }
 
-    pub fn set_bit(&mut self, square: u8) {
-        self.0 |= 1 << square;
+    pub fn get_bit(&self, index: u8) -> u64 {
+        self.0 & (1 << index)
     }
 
-    pub fn clear_bit(&mut self, square: u8) {
-        self.0 &= !(1 << square);
+    pub fn set_bit(&mut self, index: u8) {
+        self.0 |= 1 << index;
     }
 
-    pub fn is_bit_set(&self, square: u8) -> bool {
-        (self.0 & (1 << square)) != 0
+    pub fn clear_bit(&mut self, index: u8) {
+        self.0 &= !(1 << index);
+    }
+
+    pub fn is_bit_set(&self, index: u8) -> bool {
+        self.get_bit(index) != 0
     }
 }
 
