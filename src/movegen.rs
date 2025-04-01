@@ -1,4 +1,8 @@
-use crate::{bitset::Bitset, board::Board, piece::Piece};
+use crate::{
+    bitset::Bitset,
+    board::Board,
+    piece::{Color, Piece},
+};
 
 fn valid_target(board: &Board, moves: &mut Bitset, target_square: u8) -> bool {
     let same_occupied = &board.occupied[board.side_to_move.index()];
@@ -14,6 +18,54 @@ fn valid_target(board: &Board, moves: &mut Bitset, target_square: u8) -> bool {
     }
 
     true
+}
+
+const PAWN_OFFSETS: [(i8, i8); 4] = [(1, -1), (1, 0), (1, 1), (2, 0)];
+
+fn pawn_moves(board: &Board, from: &(u8, u8)) -> Bitset {
+    let mut moves = Bitset::new(0);
+
+    let (rank, file) = *from;
+
+    let offsets = match board.side_to_move {
+        Color::White => if rank == 6 {
+            &PAWN_OFFSETS
+        } else {
+            &PAWN_OFFSETS[..3]
+        }
+        .iter()
+        .map(|(r, f)| (-r, *f))
+        .collect(),
+        Color::Black => if rank == 1 {
+            &PAWN_OFFSETS
+        } else {
+            &PAWN_OFFSETS[..3]
+        }
+        .to_vec(),
+    };
+
+    for (dr, df) in offsets {
+        let (mut r, mut f) = (rank as i8, file as i8);
+
+        if (0..8).contains(&(r + dr)) && (0..8).contains(&(f + df)) {
+            r += dr;
+            f += df;
+
+            let target_square = (r * 8 + f) as u8;
+            if df == 0 {
+                if !valid_target(board, &mut moves, target_square) {
+                    break;
+                }
+            } else {
+                let opposide_occupied = &board.occupied[board.side_to_move.opposite().index()];
+                if opposide_occupied.is_bit_set(target_square) {
+                    moves.set_bit(target_square);
+                }
+            }
+        }
+    }
+
+    moves
 }
 
 const KNIGHT_OFFSETS: [(i8, i8); 8] = [
@@ -41,7 +93,7 @@ fn knight_moves(board: &Board, from: &(u8, u8)) -> Bitset {
 
             let target_square = (r * 8 + f) as u8;
             if !valid_target(board, &mut moves, target_square) {
-                break;
+                continue;
             }
         }
     }
@@ -125,7 +177,7 @@ pub fn valid_moves(board: &Board, from: &(u8, u8)) -> Bitset {
         }
 
         return match piece {
-            Piece::WhitePawn | Piece::BlackPawn => todo!(),
+            Piece::WhitePawn | Piece::BlackPawn => pawn_moves(board, from),
             Piece::WhiteKnight | Piece::BlackKnight => knight_moves(board, from),
             Piece::WhiteBishop | Piece::BlackBishop => bishop_moves(board, from),
             Piece::WhiteRook | Piece::BlackRook => rook_moves(board, from),

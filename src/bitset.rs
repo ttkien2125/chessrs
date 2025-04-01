@@ -1,6 +1,6 @@
 use std::{
     fmt::Display,
-    ops::{BitAnd, BitOr},
+    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign},
 };
 
 #[derive(Debug, PartialEq)]
@@ -41,6 +41,18 @@ impl BitOr for Bitset {
 
     fn bitor(self, rhs: Self) -> Self::Output {
         Bitset::new(self.0 | rhs.0)
+    }
+}
+
+impl BitAndAssign for Bitset {
+    fn bitand_assign(&mut self, rhs: Self) {
+        *self = Bitset::new(self.0 & rhs.0)
+    }
+}
+
+impl BitOrAssign for Bitset {
+    fn bitor_assign(&mut self, rhs: Self) {
+        *self = Bitset::new(self.0 | rhs.0)
     }
 }
 
