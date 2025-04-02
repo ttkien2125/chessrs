@@ -26,6 +26,16 @@ impl Bitset {
     pub fn is_bit_set(&self, index: u8) -> bool {
         self.get_bit(index) != 0
     }
+
+    pub fn set_bit_indices(&self) -> Vec<u8> {
+        let mut indices = Vec::new();
+        for index in 0..64 {
+            if self.is_bit_set(index) {
+                indices.push(index);
+            }
+        }
+        indices
+    }
 }
 
 impl BitAnd for Bitset {

@@ -5,6 +5,8 @@ mod board;
 mod movegen;
 mod piece;
 
+use std::env::current_exe;
+
 use bitset::Bitset;
 use board::{Board, CASTLING_FLAGS, STARTING_FEN_STRING};
 use movegen::{valid_moves, Move, MoveType};
@@ -106,21 +108,16 @@ fn parse_move(board: &Board, from: (u8, u8), to: (u8, u8)) -> Move {
 fn current_side_moves(board: &Board) -> Vec<Move> {
     let mut current_moves = Vec::new();
 
-    for square in 0..64 {
-        let occupied = &board.occupied[board.side_to_move.index()];
-        if occupied.is_bit_set(square) {
-            let from = (square / 8, square % 8);
-            let valid = valid_moves(board, &from);
+    let occupied = &board.occupied[board.side_to_move.index()];
+    for from_square in occupied.set_bit_indices() {
+        let from = (from_square / 8, from_square % 8);
 
-            for rank in 0..8 {
-                for file in 0..8 {
-                    let to = (rank, file);
-                    if valid.is_bit_set(to.0 * 8 + to.1) {
-                        let chess_move = parse_move(board, from, to);
-                        current_moves.push(chess_move);
-                    }
-                }
-            }
+        let valid = valid_moves(board, &from);
+        for to_square in valid.set_bit_indices() {
+            let to = (to_square / 8, to_square % 8);
+
+            let chess_move = parse_move(board, from, to);
+            current_moves.push(chess_move);
         }
     }
 
