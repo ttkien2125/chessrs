@@ -3,7 +3,7 @@ use std::{
     ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign},
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Bitset(u64);
 
 impl Bitset {

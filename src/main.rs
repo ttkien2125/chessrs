@@ -6,16 +6,9 @@ mod movegen;
 mod piece;
 
 use bitset::Bitset;
-use board::{Board, STARTING_FEN_STRING};
-use movegen::valid_moves;
+use board::{Board, CASTLING_FLAGS, STARTING_FEN_STRING};
+use movegen::{valid_moves, Move, MoveType};
 use piece::{Color, Piece};
-
-struct Move {
-    pub from: (u8, u8),
-    pub to: (u8, u8),
-    pub piece: Piece,
-    pub capture: Option<Piece>,
-}
 
 struct Game {
     pub board: Board,
@@ -23,7 +16,11 @@ struct Game {
 
 impl Game {
     pub fn new() -> Self {
-        let board = Board::from_fen(STARTING_FEN_STRING).unwrap();
+        let board = Board::from_fen(
+            "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPB1PPP/R3KB1R w KQkq - 1 1",
+        )
+        // Board::from_fen(STARTING_FEN_STRING)
+        .unwrap();
 
         // let mut board = Board::new();
         //
@@ -78,10 +75,74 @@ fn bitset_to_pos(bitset: Bitset) -> Vec<String> {
     result
 }
 
+const CASTLING_MOVES: [((u8, u8), (u8, u8)); 4] = [
+    ((7, 4), (7, 6)),
+    ((7, 4), (7, 2)),
+    ((0, 4), (0, 6)),
+    ((0, 4), (0, 2)),
+];
+
+fn parse_move(board: &Board, from: (u8, u8), to: (u8, u8)) -> Move {
+    if let Some(piece) = board.get(from.0, from.1) {
+        let move_type = if CASTLING_MOVES.contains(&(from, to)) {
+            MoveType::Castling
+        } else if let Some(capture) = board.get(to.0, to.1) {
+            MoveType::Capture(capture)
+        } else {
+            MoveType::Normal
+        };
+
+        Move {
+            from,
+            to,
+            piece,
+            move_type,
+        }
+    } else {
+        panic!("Invalid piece at starting square!");
+    }
+}
+
+fn current_side_moves(board: &Board) -> Vec<Move> {
+    let mut current_moves = Vec::new();
+
+    for square in 0..64 {
+        let occupied = &board.occupied[board.side_to_move.index()];
+        if occupied.is_bit_set(square) {
+            let from = (square / 8, square % 8);
+            let valid = valid_moves(board, &from);
+
+            for rank in 0..8 {
+                for file in 0..8 {
+                    let to = (rank, file);
+                    if valid.is_bit_set(to.0 * 8 + to.1) {
+                        let chess_move = parse_move(board, from, to);
+                        current_moves.push(chess_move);
+                    }
+                }
+            }
+        }
+    }
+
+    current_moves
+}
+
 fn main() {
     let mut game = Game::new();
 
     loop {
+        println!("Turn: {}", game.board.side_to_move);
+
+        print!("Castling: ");
+        for (index, flag) in game.board.can_castle.iter().enumerate() {
+            if *flag {
+                print!("{}", CASTLING_FLAGS[index]);
+            } else {
+                print!("-");
+            }
+        }
+        println!();
+
         println!("{}", game.board);
 
         println!("Bitsets:");
@@ -100,41 +161,19 @@ fn main() {
             println!("    {} - {}", color, bitset);
         }
 
-        let mut current_moves = Vec::new();
-        for square in 0..64 {
-            let occupied = &game.board.occupied[game.board.side_to_move.index()];
-            if occupied.is_bit_set(square) {
-                let from = (square / 8, square % 8);
-                let valid = valid_moves(&game.board, &from);
-
-                for rank in 0..8 {
-                    for file in 0..8 {
-                        let square = rank * 8 + file;
-                        if valid.is_bit_set(square) {
-                            let piece = game.board.get(from.0, from.1).unwrap();
-                            let piece = if piece == Piece::WhitePawn || piece == Piece::BlackPawn {
-                                "".to_string()
-                            } else {
-                                piece.to_string().to_uppercase()
-                            };
-                            let to_pos = index_to_pos((rank, file)).unwrap();
-
-                            current_moves.push((piece.to_string(), to_pos));
-                        }
-                    }
-                }
-            }
-        }
-
-        let current_moves: Vec<_> = current_moves
+        const MAX_MOVES: usize = 50;
+        let current_side_moves = current_side_moves(&game.board);
+        let current_side_moves: Vec<_> = current_side_moves
             .iter()
-            .map(|(piece, to)| format!("{}{}", piece, to))
+            .map(|m| m.to_string())
+            .take(MAX_MOVES)
             .collect();
+
         println!(
-            "{} moves (total = {}): {}",
+            "{} moves ({} shown): {}",
             game.board.side_to_move,
-            current_moves.len(),
-            current_moves.join(", "),
+            current_side_moves.len(),
+            current_side_moves.join(", "),
         );
 
         'inner: loop {
@@ -169,21 +208,10 @@ fn main() {
                 let to = pos_to_index(end_square);
 
                 if let (Some(from), Some(to)) = (from, to) {
-                    if let Some(piece) = game.board.get(from.0, from.1) {
-                        let capture = game.board.get(to.0, to.1);
-
-                        let chess_move = Move {
-                            from,
-                            to,
-                            piece,
-                            capture,
-                        };
-                        game.board.make_move(&chess_move);
-                    } else {
-                        println!("Invalid piece at starting square!");
-                    }
+                    let chess_move = parse_move(&game.board, from, to);
+                    game.board.make_move(&chess_move);
                 } else {
-                    println!("Out of bounds position!");
+                    panic!("Out of bounds position!");
                 }
             } else {
                 println!("Wrong move syntax!");

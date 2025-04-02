@@ -2,27 +2,27 @@ use std::fmt::Display;
 
 use crate::{
     bitset::Bitset,
-    movegen::valid_moves,
+    movegen::{valid_moves, Move, MoveType},
     piece::{Color, Piece},
-    Move,
 };
 
 pub const STARTING_FEN_STRING: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+pub const CASTLING_FLAGS: [char; 4] = ['K', 'Q', 'k', 'q'];
+
 pub struct Board {
     pub pieces: [Bitset; 12],
     pub occupied: [Bitset; 3],
     pub side_to_move: Color,
+    pub can_castle: [bool; 4],
 }
 
 impl Board {
     pub fn new() -> Self {
-        let pieces = [const { Bitset::new(0) }; 12];
-        let occupied = [const { Bitset::new(0) }; 3];
-
         Self {
-            pieces,
-            occupied,
+            pieces: [const { Bitset::new(0) }; 12],
+            occupied: [const { Bitset::new(0) }; 3],
             side_to_move: Color::White,
+            can_castle: [true; 4],
         }
     }
 
@@ -104,6 +104,26 @@ impl Board {
             }
         }
 
+        let side_to_move = fen_config[1];
+        board.side_to_move = match side_to_move {
+            "w" => Color::White,
+            "b" => Color::Black,
+            _ => panic!("Invalid active color"),
+        };
+
+        board.can_castle = [false; 4];
+        let can_castle = fen_config[2];
+        for flag in can_castle.chars() {
+            match flag {
+                '-' => break,
+                'K' => board.can_castle[0] = true,
+                'Q' => board.can_castle[1] = true,
+                'k' => board.can_castle[2] = true,
+                'q' => board.can_castle[3] = true,
+                _ => panic!("Invalid castling flags"),
+            }
+        }
+
         Some(board)
     }
 
@@ -112,19 +132,69 @@ impl Board {
             from,
             to,
             piece,
-            capture,
+            move_type,
         } = chess_move;
 
         let valid_moves = valid_moves(self, from);
         if !valid_moves.is_bit_set(to.0 * 8 + to.1) {
+            println!("Not a valid move!");
             return;
         }
 
         self.clear(from.0, from.1, *piece);
         self.set(to.0, to.1, *piece);
 
-        if let Some(capture) = capture {
-            self.clear(to.0, to.1, *capture);
+        match move_type {
+            MoveType::Normal => {
+                if *piece == Piece::WhiteKing {
+                    self.can_castle[0] = false;
+                    self.can_castle[1] = false;
+                } else if *piece == Piece::BlackKing {
+                    self.can_castle[2] = false;
+                    self.can_castle[3] = false;
+                } else if *piece == Piece::WhiteRook {
+                    if from.1 == 7 {
+                        self.can_castle[0] = false;
+                    } else if from.1 == 0 {
+                        self.can_castle[1] = false;
+                    }
+                } else if *piece == Piece::BlackRook {
+                    if from.1 == 7 {
+                        self.can_castle[2] = false;
+                    } else if from.1 == 0 {
+                        self.can_castle[3] = false;
+                    }
+                }
+            }
+
+            MoveType::Capture(capture) => {
+                self.clear(to.0, to.1, *capture);
+            }
+
+            MoveType::Castling => {
+                let rook = if self.side_to_move == Color::White {
+                    Piece::WhiteRook
+                } else {
+                    Piece::BlackRook
+                };
+
+                if to.1 == 6 {
+                    self.clear(to.0, 7, rook);
+                    self.set(to.0, 5, rook);
+                } else if to.1 == 2 {
+                    self.clear(to.0, 0, rook);
+                    self.set(to.0, 3, rook);
+                } else {
+                    panic!()
+                }
+
+                let (king_castle_index, queen_castle_index) = (
+                    2 * self.side_to_move.index() - 2,
+                    2 * self.side_to_move.index() - 1,
+                );
+                self.can_castle[king_castle_index] = false;
+                self.can_castle[queen_castle_index] = false;
+            }
         }
 
         self.side_to_move = self.side_to_move.opposite();
