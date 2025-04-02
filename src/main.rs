@@ -5,8 +5,6 @@ mod board;
 mod movegen;
 mod piece;
 
-use std::env::current_exe;
-
 use bitset::Bitset;
 use board::{Board, CASTLING_FLAGS, STARTING_FEN_STRING};
 use movegen::{valid_moves, Move, MoveType};
